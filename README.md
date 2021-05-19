@@ -1,62 +1,105 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400"></a></p>
+# Transaction API Project
 
-<p align="center">
-<a href="https://travis-ci.org/laravel/framework"><img src="https://travis-ci.org/laravel/framework.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+## 1. Introdução
 
-## About Laravel
+A Transaction API é um entrypoint relacionado a transferência de valores. A Transaction API utiliza todos os princípios da arquitetura REST.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## 2. Entrypoint
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+### Entrypoint de Transação
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+### Descrição
 
-## Learning Laravel
+O entrypoint é utilizado para realizar a transferência de valores entre clientes PicPay. Não é possível que um cliente do tipo 'lojista' faça uma transferência.
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+#### Entrypoint
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains over 1500 video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+`POST /transaction`
 
-## Laravel Sponsors
+#### Requisição
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the Laravel [Patreon page](https://patreon.com/taylorotwell).
+##### Corpo da Requisição
 
-### Premium Partners
+```json
+{
+    "value" : 100.00,
+    "payer" : 4,
+    "payee" : 15
+}
+```
 
-- **[Vehikl](https://vehikl.com/)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Cubet Techno Labs](https://cubettech.com)**
-- **[Cyber-Duck](https://cyber-duck.co.uk)**
-- **[Many](https://www.many.co.uk)**
-- **[Webdock, Fast VPS Hosting](https://www.webdock.io/en)**
-- **[DevSquad](https://devsquad.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel/)**
-- **[OP.GG](https://op.gg)**
+* `value` *(float)*
+  * o valor da transação
+* `payer` *(int)*
+  * o id do usuário que realizará a transferência
+* `payee` *(int)*
+  * o id do usuário que receberá a transferência
 
-## Contributing
+#### Respostas
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+##### Códigos de Resposta
 
-## Code of Conduct
+###### `201` - created
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+A requisição retornará o código de resposta `201` quando uma transação for realizada com sucesso. Também será retornado um payload contendo o status da transação e um código de transação.
 
-## Security Vulnerabilities
+```json
+{
+    "success": true,
+    "transaction_id": "f38e6f9b-4773-416e-98a8-8afd1cd8630b",
+}
+```
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+###### `400` - bad request
 
-## License
+A requisição retornará o código de resposta `400` quando ocorrer algum erro durante a transação. Esse erro estará relacionado a erros de domínio ou negócio como, por exemplo, o usuário não ter saldo suficiente ou haver uma negativa do autorizador externo. Também será retornado um payload contendo o status da transação, um código de erro e uma mensagem descritiva sobre o erro ocorrido. *Para mais informações consultar a tabela de erros abaixo.*
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+```json
+{
+    "success": false,
+    "type": "saldo_insuficiente",
+    "message": "O usuário com id 2 não possui saldo suficiente para transferir o valor de 100,00 reais."
+}
+```
+
+###### `422` - unprocessable entity
+
+A requisição retornará o código de resposta `422` quando ocorrer algum erro de validação de dados como, por exemplo, passar um tipo não aceito pela API ou faltar algum campo obrigatório na requisição. Também será retornado um payload contendo o status da transação, um código de erro, uma mensagem descritiva e um array de erros indicando quais campos não passou na validação.
+
+```json
+{
+    "success": false,
+    "type": "erro_de_validacao",
+    "message": "Houve um erro de validação.",
+    "errors": [
+        "The value must be a number.",
+        "The payee field is required."
+    ]
+}
+```
+
+###### `500` - internal error
+
+A requisição retornará o código de resposta `500` quando ocorrer algum erro interno do sistema como, por exemplo, falha na comunicação com banco de dados. Também será retornado um payload contendo o status da transação, um código de erro e uma mensagem descritiva.
+
+```json
+{
+    "success": false,
+    "type": "erro_interno",
+    "message": "Houve um erro interno no sistema."
+}
+```
+
+##### Tipos de Resposta
+
+Os tipos de respostas disponíveis são:
+
+| Tipo de Erro | Descrição do Erro |
+|:------------:|-------------------|
+|`erro_de_validacao`|É retornado quando o payload tem algum erro de formatação ou tipos errados, por exemplo, mandar o valor como uma string.|
+|`saldo_insuficiente`|É retornado quando o pagador não tem saldo suficiente na conta.|
+|`transacao_nao_autorizada`|É retornado quando a transação não foi autorizada pelo agente autorizador externo.|
+|`usuario_nao_autorizado`|É retornado quando o usuário não está autorizado a fazer uma transação. Por exemplo, um lojista não pode fazer transferências.|
+|`transacao_para_o_mesmo_usuario`|É retornado quando o usuário tenta transferir dinheiro para ele mesmo.|
+|`usuario_nao_encontrado`|É retornado quando algum dos usuários da transação não existe.|
+|`erro_interno`|É retornado quando ocorre algum erro interno no sistema impossibilitando a finalização da transação.|

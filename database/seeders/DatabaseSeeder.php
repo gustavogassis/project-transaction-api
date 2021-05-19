@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\User;
 use Illuminate\Database\Seeder;
 
 class DatabaseSeeder extends Seeder
@@ -13,6 +14,34 @@ class DatabaseSeeder extends Seeder
      */
     public function run()
     {
-        // \App\Models\User::factory(10)->create();
+        User::factory()->create([
+            'id' => 1,
+            'type' => 'comum',
+            'balance' => 100.00
+        ]);
+
+        User::factory()->create([
+            'id' => 2,
+            'type' => 'comum',
+            'balance' => 200.00
+        ]);
+
+        User::factory()->create([
+            'id' => 3,
+            'type' => 'comum',
+            'balance' => 20.00
+        ]);
+
+        User::factory()->create([
+            'id' => 4,
+            'type' => 'lojista',
+            'balance' => 100.00
+        ]);
+
+        User::factory()->create([
+            'id' => 5,
+            'type' => 'lojista',
+            'balance' => 80.00
+        ]);
     }
 }
